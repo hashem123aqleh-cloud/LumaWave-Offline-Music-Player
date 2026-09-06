@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { NowPlayingBar } from '@/components/NowPlayingBar';
@@ -17,6 +17,8 @@ export default function LibraryScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<'all' | 'favorites'>('all');
   const [showCreate, setShowCreate] = useState(false);
+  const [actionTrack, setActionTrack] = useState<Track | null>(null);
+  const [confirmDeleteTrack, setConfirmDeleteTrack] = useState<Track | null>(null);
   const { tracks, playlists, addTracks, playTrack, removeTrack, isLoading, createPlaylist, addTrackToPlaylist, toggleFavorite } = useMusic();
   const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
 
@@ -27,16 +29,14 @@ export default function LibraryScreen() {
   }), [filter, query, tracks]);
 
   const openTrackMenu = (track: Track) => {
-    const playlistButtons = playlists.slice(0, 4).map((playlist) => ({
-      text: `Add to ${playlist.name}`,
-      onPress: () => void addTrackToPlaylist(playlist.id, track.id),
-    }));
-    Alert.alert(track.title, 'Choose an action', [
-      { text: track.isFavorite ? 'Remove from Favorites' : 'Add to Favorites', onPress: () => void toggleFavorite(track.id) },
-      ...playlistButtons,
-      { text: 'Delete imported file', style: 'destructive', onPress: () => void removeTrack(track.id) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    setActionTrack(track);
+  };
+
+  const closeTrackMenu = () => setActionTrack(null);
+  const selectDelete = () => {
+    if (!actionTrack) return;
+    setConfirmDeleteTrack(actionTrack);
+    closeTrackMenu();
   };
 
   const header = (
@@ -69,6 +69,27 @@ export default function LibraryScreen() {
         />
         <NowPlayingBar onPress={() => router.push('/player')} />
         <PlaylistEditorModal visible={showCreate} title="New playlist" saveLabel="Create playlist" onClose={() => setShowCreate(false)} onSave={(name, description, coverKey) => { void createPlaylist(name, description, coverKey); setShowCreate(false); }} />
+        <Modal visible={Boolean(actionTrack)} transparent animationType="fade" onRequestClose={closeTrackMenu}>
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.actionSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.actionHeader}><View style={{ flex: 1 }}><Text style={[styles.actionTitle, { color: colors.foreground }]} numberOfLines={1}>{actionTrack?.title}</Text><Text style={[styles.actionSubtitle, { color: colors.mutedForeground }]}>Choose an action</Text></View><Pressable onPress={closeTrackMenu} hitSlop={12}><Feather name="x" size={21} color={colors.mutedForeground} /></Pressable></View>
+              <Pressable onPress={() => { if (actionTrack) void toggleFavorite(actionTrack.id); closeTrackMenu(); }} style={[styles.actionItem, { borderTopColor: colors.border }]}><Feather name="heart" size={19} color={colors.primary} /><Text style={[styles.actionText, { color: colors.foreground }]}>{actionTrack?.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'}</Text></Pressable>
+              {playlists.slice(0, 4).map((playlist) => <Pressable key={playlist.id} onPress={() => { if (actionTrack) void addTrackToPlaylist(playlist.id, actionTrack.id); closeTrackMenu(); }} style={[styles.actionItem, { borderTopColor: colors.border }]}><Feather name="plus-circle" size={19} color={colors.primary} /><Text style={[styles.actionText, { color: colors.foreground }]}>Add to {playlist.name}</Text></Pressable>)}
+              <Pressable onPress={selectDelete} style={[styles.actionItem, { borderTopColor: colors.border }]}><Feather name="trash-2" size={19} color={colors.destructive} /><Text style={[styles.actionText, { color: colors.destructive }]}>Delete imported file</Text></Pressable>
+              <Pressable onPress={closeTrackMenu} style={[styles.cancelAction, { backgroundColor: colors.secondary }]}><Text style={[styles.cancelText, { color: colors.foreground }]}>Cancel</Text></Pressable>
+            </View>
+          </View>
+        </Modal>
+        <Modal visible={Boolean(confirmDeleteTrack)} transparent animationType="fade" onRequestClose={() => setConfirmDeleteTrack(null)}>
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.confirmSheet, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[styles.confirmIcon, { backgroundColor: colors.destructive + '20' }]}><Feather name="trash-2" size={22} color={colors.destructive} /></View>
+              <Text style={[styles.confirmTitle, { color: colors.foreground }]}>Delete this imported file?</Text>
+              <Text style={[styles.confirmCopy, { color: colors.mutedForeground }]} numberOfLines={2}>{confirmDeleteTrack?.title} will be removed from the app and its offline storage.</Text>
+              <View style={styles.confirmButtons}><Pressable onPress={() => setConfirmDeleteTrack(null)} style={[styles.confirmButton, { backgroundColor: colors.secondary }]}><Text style={[styles.cancelText, { color: colors.foreground }]}>Cancel</Text></Pressable><Pressable onPress={() => { if (confirmDeleteTrack) void removeTrack(confirmDeleteTrack.id); setConfirmDeleteTrack(null); }} style={[styles.confirmButton, { backgroundColor: colors.destructive }]}><Text style={[styles.cancelText, { color: colors.destructiveForeground }]}>Delete</Text></Pressable></View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </ScreenTransition>
   );
@@ -113,4 +134,19 @@ const styles = StyleSheet.create({
   rowArtist: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 6 },
   index: { fontFamily: 'Inter_600SemiBold', fontSize: 12, marginLeft: 10 },
   moreButton: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginLeft: 9 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(4,5,9,0.72)', justifyContent: 'flex-end' },
+  actionSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, padding: 21, paddingBottom: 30 },
+  actionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  actionTitle: { fontFamily: 'Inter_700Bold', fontSize: 20 },
+  actionSubtitle: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 4 },
+  actionItem: { minHeight: 56, borderTopWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  actionText: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
+  cancelAction: { minHeight: 50, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 14 },
+  cancelText: { fontFamily: 'Inter_700Bold', fontSize: 13 },
+  confirmSheet: { margin: 20, borderRadius: 24, borderWidth: 1, padding: 22, alignItems: 'center' },
+  confirmIcon: { width: 50, height: 50, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  confirmTitle: { fontFamily: 'Inter_700Bold', fontSize: 19, textAlign: 'center', marginTop: 16 },
+  confirmCopy: { fontFamily: 'Inter_400Regular', fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 8 },
+  confirmButtons: { width: '100%', flexDirection: 'row', gap: 10, marginTop: 22 },
+  confirmButton: { flex: 1, minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
 });
