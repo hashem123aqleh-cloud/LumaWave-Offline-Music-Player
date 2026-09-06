@@ -3,6 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
+import { VolumeSlider } from '@/components/VolumeSlider';
 import { useColors } from '@/hooks/useColors';
 import { useMusic } from '@/context/MusicContext';
 
@@ -15,7 +16,7 @@ export default function PlayerScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { currentTrack, isPlaying, togglePlayback, skipForward, skipBack, progress, duration, seekTo } = useMusic();
+  const { currentTrack, isPlaying, togglePlayback, skipForward, skipBack, progress, duration, seekTo, volume, setVolume, toggleFavorite } = useMusic();
 
   if (!currentTrack) {
     return <View style={[styles.empty, { backgroundColor: colors.background }]}><Text style={{ color: colors.mutedForeground }}>Add a track to start listening.</Text></View>;
@@ -38,13 +39,17 @@ export default function PlayerScreen() {
             <Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{currentTrack.title}</Text>
             <Text style={[styles.trackArtist, { color: colors.mutedForeground }]}>{currentTrack.artist}</Text>
           </View>
-          <Pressable hitSlop={12}><Feather name="heart" size={23} color={colors.foreground} /></Pressable>
+          <Pressable onPress={() => void toggleFavorite(currentTrack.id)} hitSlop={12}><Feather name="heart" size={23} color={currentTrack.isFavorite ? colors.primary : colors.foreground} /></Pressable>
         </View>
         <View style={styles.timeline}>
           <View style={[styles.trackBar, { backgroundColor: colors.secondary }]}>
             <View style={[styles.trackFill, { backgroundColor: colors.primary, width: `${duration ? (progress / duration) * 100 : 0}%` }]} />
           </View>
           <View style={styles.timeRow}><Text style={[styles.time, { color: colors.mutedForeground }]}>{formatTime(progress)}</Text><Text style={[styles.time, { color: colors.mutedForeground }]}>{formatTime(duration)}</Text></View>
+        </View>
+        <View style={styles.volumeSection}>
+          <Text style={[styles.volumeLabel, { color: colors.mutedForeground }]}>VOLUME</Text>
+          <VolumeSlider value={volume} onChange={setVolume} trackColor={colors.secondary} fillColor={colors.primary} thumbColor={colors.foreground} />
         </View>
         <View style={styles.controls}>
           <Pressable onPress={skipBack} hitSlop={14}><Feather name="skip-back" size={27} color={colors.foreground} /></Pressable>
@@ -79,6 +84,8 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   time: { fontFamily: 'Inter_400Regular', fontSize: 11 },
   controls: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 25 },
+  volumeSection: { width: '100%', marginTop: 25 },
+  volumeLabel: { fontFamily: 'Inter_700Bold', fontSize: 10, letterSpacing: 1.4, marginBottom: 6 },
   playButton: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', paddingLeft: 3 },
   infoCard: { width: '100%', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', paddingVertical: 13, marginTop: 34 },
   infoText: { fontFamily: 'Inter_500Medium', fontSize: 12 },
