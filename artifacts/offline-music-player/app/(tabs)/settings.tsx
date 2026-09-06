@@ -17,26 +17,29 @@ export default function SettingsScreen() {
 
   return (
     <ScreenTransition>
-      <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={[styles.container, { paddingTop: topInset + 24, paddingBottom: 130 }]} showsVerticalScrollIndicator={false}>
-      <Text style={[styles.kicker, { color: colors.primary }]}>PERSONALIZE</Text>
-      <Text style={[styles.title, { color: colors.foreground }]}>Settings</Text>
-      <View style={[styles.storageCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.storageIcon, { backgroundColor: colors.accent }]}><Feather name="hard-drive" size={20} color={colors.primary} /></View>
-        <View style={{ flex: 1 }}><Text style={[styles.cardTitle, { color: colors.foreground }]}>Offline library</Text><Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'} stored on this iPhone</Text></View>
-        <Feather name="check-circle" size={20} color={colors.primary} />
+      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <ScrollView contentContainerStyle={[styles.container, { paddingTop: topInset + 24, paddingBottom: 130 }]} showsVerticalScrollIndicator={false}>
+          <Text style={[styles.kicker, { color: colors.primary }]}>PERSONALIZE</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>Settings</Text>
+          <View style={[styles.storageCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={[styles.storageIcon, { backgroundColor: colors.accent }]}><Feather name="hard-drive" size={20} color={colors.primary} /></View>
+            <View style={{ flex: 1 }}><Text style={[styles.cardTitle, { color: colors.foreground }]}>Offline library</Text><Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{tracks.length} {tracks.length === 1 ? 'track' : 'tracks'} stored on this iPhone</Text></View>
+            <Feather name="check-circle" size={20} color={colors.primary} />
+          </View>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LIBRARY</Text>
+          <Pressable onPress={() => void addTracks()} style={[styles.option, { borderBottomColor: colors.border }]}><View style={[styles.optionIcon, { backgroundColor: colors.secondary }]}><Feather name="folder-plus" size={18} color={colors.foreground} /></View><Text style={[styles.optionText, { color: colors.foreground }]}>Import from Files</Text><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></Pressable>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ABOUT</Text>
+          <Pressable onPress={showAbout} style={[styles.option, { borderBottomColor: colors.border }]}><View style={[styles.optionIcon, { backgroundColor: colors.secondary }]}><Feather name="info" size={18} color={colors.foreground} /></View><Text style={[styles.optionText, { color: colors.foreground }]}>About this app</Text><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></Pressable>
+          <View style={[styles.note, { backgroundColor: colors.accent }]}><Feather name="shield" size={16} color={colors.primary} /><Text style={[styles.noteText, { color: colors.accentForeground }]}>Music is stored locally. No account or internet connection is needed to listen.</Text></View>
+        </ScrollView>
+        {currentTrack ? <NowPlayingBar onPress={() => router.push('/player')} /> : null}
       </View>
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>LIBRARY</Text>
-      <Pressable onPress={() => void addTracks()} style={[styles.option, { borderBottomColor: colors.border }]}><View style={[styles.optionIcon, { backgroundColor: colors.secondary }]}><Feather name="folder-plus" size={18} color={colors.foreground} /></View><Text style={[styles.optionText, { color: colors.foreground }]}>Import from Files</Text><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></Pressable>
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ABOUT</Text>
-      <Pressable onPress={showAbout} style={[styles.option, { borderBottomColor: colors.border }]}><View style={[styles.optionIcon, { backgroundColor: colors.secondary }]}><Feather name="info" size={18} color={colors.foreground} /></View><Text style={[styles.optionText, { color: colors.foreground }]}>About this app</Text><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></Pressable>
-      <View style={[styles.note, { backgroundColor: colors.accent }]}><Feather name="shield" size={16} color={colors.primary} /><Text style={[styles.noteText, { color: colors.accentForeground }]}>Music is stored locally. No account or internet connection is needed to listen.</Text></View>
-      {currentTrack ? <NowPlayingBar onPress={() => router.push('/player')} /> : null}
-      </ScrollView>
     </ScreenTransition>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   container: { paddingHorizontal: 20 },
   kicker: { fontFamily: 'Inter_700Bold', fontSize: 11, letterSpacing: 1.6 },
   title: { fontFamily: 'Inter_700Bold', fontSize: 34, marginTop: 7, marginBottom: 30 },

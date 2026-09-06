@@ -115,11 +115,11 @@ export function MusicProvider({ children }: PropsWithChildren) {
   }, [currentTrack, tracks]);
 
   useEffect(() => {
-    if (shouldAutoPlay && currentTrack && player.isLoaded) {
+    if (shouldAutoPlay && currentTrack && status.isLoaded) {
       player.play();
       setShouldAutoPlay(false);
     }
-  }, [currentTrack, player, player.isLoaded, shouldAutoPlay]);
+  }, [currentTrack, player, shouldAutoPlay, status.isLoaded]);
 
   const persistTracks = async (nextTracks: Track[]) => {
     setTracks(nextTracks);
@@ -169,9 +169,15 @@ export function MusicProvider({ children }: PropsWithChildren) {
     }
   };
 
+  const requestPlay = () => {
+    if (!currentTrack) return;
+    if (status.isLoaded) player.play();
+    else setShouldAutoPlay(true);
+  };
+
   const playTrack = (track: Track) => {
     if (currentTrack?.id === track.id) {
-      player.play();
+      requestPlay();
       return;
     }
     setCurrentTrack(track);
@@ -181,7 +187,7 @@ export function MusicProvider({ children }: PropsWithChildren) {
   const togglePlayback = () => {
     if (!currentTrack) return;
     if (status.playing) player.pause();
-    else player.play();
+    else requestPlay();
   };
 
   const skip = (direction: 1 | -1) => {
