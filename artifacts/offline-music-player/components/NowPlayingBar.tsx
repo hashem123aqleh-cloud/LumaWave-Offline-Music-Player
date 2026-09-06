@@ -1,18 +1,20 @@
 import { Feather } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { useMusic } from '@/context/MusicContext';
 
 export function NowPlayingBar({ onPress }: { onPress?: () => void }) {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const { currentTrack, isPlaying, togglePlayback, skipForward } = useMusic();
   if (!currentTrack) return null;
 
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.container, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.9 : 1 }]}
+      style={({ pressed }) => [styles.container, { backgroundColor: colors.card, borderColor: colors.border, bottom: Platform.OS === 'web' ? 84 : Math.max(84, insets.bottom + 54), opacity: pressed ? 0.9 : 1 }]}
     >
       <MusicArtwork coverKey={currentTrack.coverKey} size={46} style={styles.artwork} />
       <View style={styles.copy}>
@@ -31,7 +33,7 @@ export function NowPlayingBar({ onPress }: { onPress?: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  container: { minHeight: 68, marginHorizontal: 16, marginBottom: 10, borderRadius: 18, borderWidth: 1, flexDirection: 'row', alignItems: 'center', padding: 10, overflow: 'hidden' },
+  container: { position: 'absolute', left: 16, right: 16, minHeight: 68, borderRadius: 18, borderWidth: 1, flexDirection: 'row', alignItems: 'center', padding: 10, overflow: 'hidden', zIndex: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.28, shadowRadius: 16, elevation: 8 },
   artwork: { borderRadius: 12, shadowOpacity: 0 },
   copy: { flex: 1, marginHorizontal: 12 },
   title: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },

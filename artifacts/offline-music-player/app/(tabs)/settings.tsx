@@ -1,13 +1,16 @@
 import { Feather } from '@expo/vector-icons';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { NowPlayingBar } from '@/components/NowPlayingBar';
 import { useColors } from '@/hooks/useColors';
 import { useMusic } from '@/context/MusicContext';
 
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { tracks, addTracks } = useMusic();
+  const router = useRouter();
+  const { tracks, addTracks, currentTrack } = useMusic();
   const showAbout = () => Alert.alert('Offline Music Player', 'A private space for the music you already own. Your library stays on this iPhone.');
 
   return (
@@ -24,6 +27,7 @@ export default function SettingsScreen() {
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>ABOUT</Text>
       <Pressable onPress={showAbout} style={[styles.option, { borderBottomColor: colors.border }]}><View style={[styles.optionIcon, { backgroundColor: colors.secondary }]}><Feather name="info" size={18} color={colors.foreground} /></View><Text style={[styles.optionText, { color: colors.foreground }]}>About this app</Text><Feather name="chevron-right" size={18} color={colors.mutedForeground} /></Pressable>
       <View style={[styles.note, { backgroundColor: colors.accent }]}><Feather name="shield" size={16} color={colors.primary} /><Text style={[styles.noteText, { color: colors.accentForeground }]}>Music is stored locally. No account or internet connection is needed to listen.</Text></View>
+      {currentTrack ? <NowPlayingBar onPress={() => router.push('/player')} /> : null}
     </ScrollView>
   );
 }
