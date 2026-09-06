@@ -3,6 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
+import { SeekBar } from '@/components/SeekBar';
 import { VolumeSlider } from '@/components/VolumeSlider';
 import { useColors } from '@/hooks/useColors';
 import { useMusic } from '@/context/MusicContext';
@@ -42,9 +43,8 @@ export default function PlayerScreen() {
           <Pressable onPress={() => void toggleFavorite(currentTrack.id)} hitSlop={12}><Feather name="heart" size={23} color={currentTrack.isFavorite ? colors.primary : colors.foreground} /></Pressable>
         </View>
         <View style={styles.timeline}>
-          <View style={[styles.trackBar, { backgroundColor: colors.secondary }]}>
-            <View style={[styles.trackFill, { backgroundColor: colors.primary, width: `${duration ? (progress / duration) * 100 : 0}%` }]} />
-          </View>
+          <SeekBar position={progress} duration={duration} onSeek={seekTo} trackColor={colors.secondary} fillColor={colors.primary} thumbColor={colors.foreground} />
+          <Text style={[styles.seekHint, { color: colors.mutedForeground }]}>Drag to seek</Text>
           <View style={styles.timeRow}><Text style={[styles.time, { color: colors.mutedForeground }]}>{formatTime(progress)}</Text><Text style={[styles.time, { color: colors.mutedForeground }]}>{formatTime(duration)}</Text></View>
         </View>
         <View style={styles.volumeSection}>
@@ -79,9 +79,8 @@ const styles = StyleSheet.create({
   trackTitle: { fontFamily: 'Inter_700Bold', fontSize: 22 },
   trackArtist: { fontFamily: 'Inter_500Medium', fontSize: 15, marginTop: 7 },
   timeline: { width: '100%', marginTop: 30 },
-  trackBar: { height: 5, borderRadius: 5, overflow: 'hidden' },
-  trackFill: { height: '100%', borderRadius: 5 },
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  seekHint: { fontFamily: 'Inter_400Regular', fontSize: 10, letterSpacing: 0.4, marginTop: -1 },
+  timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 3 },
   time: { fontFamily: 'Inter_400Regular', fontSize: 11 },
   controls: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 25 },
   volumeSection: { width: '100%', marginTop: 25 },
