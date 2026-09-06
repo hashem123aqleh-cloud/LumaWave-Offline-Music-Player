@@ -7,6 +7,9 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
+import { useRouter } from 'expo-router';
+import { NowPlayingBar } from '@/components/NowPlayingBar';
+import { useMusic } from '@/context/MusicContext';
 
 // IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
 // NativeTabs intentionally does NOT use custom design tokens — liquid glass
@@ -104,8 +107,16 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
+  const router = useRouter();
+  const { currentTrack } = useMusic();
+  return (
+    <View style={styles.shell}>
+      {isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />}
+      {currentTrack ? <NowPlayingBar onPress={() => router.push('/player')} /> : null}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  shell: { flex: 1 },
+});

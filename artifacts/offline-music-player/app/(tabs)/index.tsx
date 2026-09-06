@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
-import { NowPlayingBar } from '@/components/NowPlayingBar';
 import { ScreenTransition } from '@/components/ScreenTransition';
 import { useMusic } from '@/context/MusicContext';
 import { useColors } from '@/hooks/useColors';
@@ -12,7 +11,7 @@ export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { tracks, currentTrack, playTrack, addTracks } = useMusic();
+  const { tracks, playTrack, addTracks } = useMusic();
   const recent = tracks.slice(0, 3);
 
   const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
@@ -30,7 +29,6 @@ export default function HomeScreen() {
         {recent.length === 0 ? <View style={[styles.emptyRow, { borderColor: colors.border }]}><Feather name="music" size={18} color={colors.mutedForeground} /><Text style={[styles.emptyRowText, { color: colors.mutedForeground }]}>Import a few MP3s to see them here.</Text></View> : recent.map((track) => <Pressable key={track.id} onPress={() => { playTrack(track); router.push('/player'); }} style={({ pressed }) => [styles.trackRow, { opacity: pressed ? 0.7 : 1 }]}><MusicArtwork coverKey={track.coverKey} size={52} style={styles.trackArt} /><View style={styles.trackCopy}><Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{track.title}</Text><Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{track.artist}</Text></View><Feather name="play-circle" size={23} color={colors.primary} /></Pressable>)}
         <View style={[styles.tip, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.tipIcon, { backgroundColor: colors.accent }]}><Feather name="headphones" size={17} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[styles.tipTitle, { color: colors.foreground }]}>Made for your pocket</Text><Text style={[styles.tipCopy, { color: colors.mutedForeground }]}>Playback keeps going with your screen locked.</Text></View></View>
         </ScrollView>
-        {currentTrack ? <NowPlayingBar onPress={() => router.push('/player')} /> : null}
       </View>
     </ScreenTransition>
   );

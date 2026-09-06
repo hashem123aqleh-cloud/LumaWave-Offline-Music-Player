@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, FlatList, PanResponder, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { PlaylistEditorModal } from '@/components/PlaylistEditorModal';
@@ -26,14 +26,22 @@ export default function PlaylistScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [showEditor, setShowEditor] = useState(false);
   const [showAddSongs, setShowAddSongs] = useState(false);
+  const [orderedTrackIds, setOrderedTrackIds] = useState<string[]>([]);
   const { tracks, playlists, playTrack, updatePlaylist, deletePlaylist, setPlaylistTracks } = useMusic();
   const playlist = playlists.find((item) => item.id === id);
-  const [selectedIds, setSelectedIds] = useState<string[]>(playlist?.trackIds ?? []);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
 
+  useEffect(() => {
+    if (playlist) {
+      setOrderedTrackIds(playlist.trackIds);
+      setSelectedIds(playlist.trackIds);
+    }
+  }, [playlist?.id, playlist?.trackIds.join('|')]);
+
   const playlistTracks = useMemo(
-    () => playlist?.trackIds.map((trackId) => tracks.find((track) => track.id === trackId)).filter((track): track is Track => Boolean(track)) ?? [],
-    [playlist, tracks],
+    () => orderedTrackIds.map((trackId) => tracks.find((track) => track.id === trackId)).filter((track): track is Track => Boolean(track)),
+    [orderedTrackIds, tracks],
   );
 
   if (!playlist) {
@@ -41,11 +49,12 @@ export default function PlaylistScreen() {
   }
 
   const openAddSongs = () => {
-    setSelectedIds(playlist.trackIds);
+    setSelectedIds(orderedTrackIds);
     setShowAddSongs(true);
   };
 
   const saveSongs = async () => {
+    setOrderedTrackIds(selectedIds);
     await setPlaylistTracks(playlist.id, selectedIds);
     setShowAddSongs(false);
   };
@@ -55,12 +64,13 @@ export default function PlaylistScreen() {
     router.back();
   };
 
-  const moveTrack = async (index: number, direction: -1 | 1) => {
-    const nextIds = [...playlist.trackIds];
-    const targetIndex = index + direction;
+  const reorderTracks = (fromIndex: number, targetIndex: number) => {
+    const nextIds = [...orderedTrackIds];
     if (targetIndex < 0 || targetIndex >= nextIds.length) return;
-    [nextIds[index], nextIds[targetIndex]] = [nextIds[targetIndex], nextIds[index]];
-    await setPlaylistTracks(playlist.id, nextIds);
+    const [movedId] = nextIds.splice(fromIndex, 1);
+    nextIds.splice(targetIndex, 0, movedId);
+    setOrderedTrackIds(nextIds);
+    void setPlaylistTracks(playlist.id, nextIds);
   };
 
   return (
@@ -83,14 +93,14 @@ export default function PlaylistScreen() {
                 <View style={styles.heroCopy}><Text style={[styles.title, { color: colors.foreground }]}>{playlist.name}</Text><Text style={[styles.description, { color: colors.mutedForeground }]}>{playlist.description || 'A playlist made for your moments.'}</Text><Text style={[styles.count, { color: colors.primary }]}>{playlistTracks.length} {playlistTracks.length === 1 ? 'song' : 'songs'}</Text></View>
               </View>
               <View style={styles.actionRow}>
-                <Pressable onPress={() => playlistTracks[0] && playTrack(playlistTracks[0], playlist.trackIds)} style={[styles.playAll, { backgroundColor: colors.primary }]}><Feather name="play" size={17} color={colors.primaryForeground} /><Text style={[styles.playAllText, { color: colors.primaryForeground }]}>Play playlist</Text></Pressable>
+                <Pressable onPress={() => playlistTracks[0] && playTrack(playlistTracks[0], orderedTrackIds)} style={[styles.playAll, { backgroundColor: colors.primary }]}><Feather name="play" size={17} color={colors.primaryForeground} /><Text style={[styles.playAllText, { color: colors.primaryForeground }]}>Play playlist</Text></Pressable>
                 <Pressable onPress={openAddSongs} style={[styles.addSongs, { backgroundColor: colors.secondary }]}><Feather name="plus" size={18} color={colors.foreground} /><Text style={[styles.addSongsText, { color: colors.foreground }]}>Add songs</Text></Pressable>
               </View>
-              <View style={styles.songsHeader}><View style={styles.songsHeadingCopy}><Text style={[styles.songsTitle, { color: colors.foreground }]}>Songs</Text><Text style={[styles.songsCount, { color: colors.mutedForeground }]}>{playlistTracks.length}</Text></View><Text style={[styles.orderHint, { color: colors.mutedForeground }]}>Use arrows to reorder</Text></View>
+              <View style={styles.songsHeader}><View style={styles.songsHeadingCopy}><Text style={[styles.songsTitle, { color: colors.foreground }]}>Songs</Text><Text style={[styles.songsCount, { color: colors.mutedForeground }]}>{playlistTracks.length}</Text></View><Text style={[styles.orderHint, { color: colors.mutedForeground }]}>Drag to reorder</Text></View>
             </View>
           }
           ListEmptyComponent={<View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}><Feather name="music" size={22} color={colors.primary} /><Text style={[styles.emptyCardTitle, { color: colors.foreground }]}>This playlist is ready for its first song</Text><Text style={[styles.emptyCardCopy, { color: colors.mutedForeground }]}>Add tracks from your library whenever inspiration strikes.</Text><Pressable onPress={openAddSongs} style={[styles.emptyAdd, { backgroundColor: colors.foreground }]}><Text style={[styles.emptyAddText, { color: colors.background }]}>Choose songs</Text></Pressable></View>}
-          renderItem={({ item, index }) => <View style={[styles.row, { borderBottomColor: colors.border }]}><Pressable onPress={() => playTrack(item, playlist.trackIds)} onLongPress={() => void setPlaylistTracks(playlist.id, playlist.trackIds.filter((trackId) => trackId !== item.id))} style={({ pressed }) => [styles.rowMain, { opacity: pressed ? 0.72 : 1 }]}><MusicArtwork coverKey={item.coverKey} size={54} style={styles.trackArt} /><View style={styles.trackCopy}><Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{item.title}</Text><Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{item.artist}</Text><View style={styles.trackMeta}><Text style={[styles.trackMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>{formatImportedDate(item.importedAt)}</Text><Text style={[styles.trackMetaText, { color: colors.mutedForeground }]}>• {formatDuration(item.duration)}</Text></View></View><Text style={[styles.index, { color: colors.mutedForeground }]}>{String(index + 1).padStart(2, '0')}</Text></Pressable><View style={styles.reorderControls}><Pressable accessibilityLabel="Move song up" disabled={index === 0} onPress={() => void moveTrack(index, -1)} style={({ pressed }) => [styles.reorderButton, { backgroundColor: colors.secondary, opacity: index === 0 ? 0.28 : pressed ? 0.6 : 1 }]}><Feather name="chevron-up" size={17} color={colors.foreground} /></Pressable><Pressable accessibilityLabel="Move song down" disabled={index === playlistTracks.length - 1} onPress={() => void moveTrack(index, 1)} style={({ pressed }) => [styles.reorderButton, { backgroundColor: colors.secondary, opacity: index === playlistTracks.length - 1 ? 0.28 : pressed ? 0.6 : 1 }]}><Feather name="chevron-down" size={17} color={colors.foreground} /></Pressable></View></View>}
+          renderItem={({ item, index }) => <DraggableTrackRow item={item} index={index} total={playlistTracks.length} colors={colors} onPlay={() => playTrack(item, orderedTrackIds)} onDrop={reorderTracks} />}
         />
         <Pressable onPress={() => void deleteCurrentPlaylist()} style={styles.deleteButton}><Feather name="trash-2" size={15} color={colors.destructive} /><Text style={[styles.deleteText, { color: colors.destructive }]}>Delete playlist</Text></Pressable>
         <PlaylistEditorModal visible={showEditor} title="Edit playlist" saveLabel="Save changes" initialName={playlist.name} initialDescription={playlist.description} initialCoverKey={playlist.coverKey} onClose={() => setShowEditor(false)} onSave={(name, description, coverKey) => { void updatePlaylist(playlist.id, { name, description, coverKey }); setShowEditor(false); }} />
@@ -110,6 +120,73 @@ function AddSongsModal({ visible, tracks, selectedIds, onToggle, onClose, onSave
         <Pressable onPress={onSave} style={[styles.saveSongs, { backgroundColor: colors.primary }]}><Text style={[styles.saveSongsText, { color: colors.primaryForeground }]}>Save playlist</Text></Pressable>
       </View>
     </View>
+  );
+}
+
+function DraggableTrackRow({
+  item,
+  index,
+  total,
+  colors,
+  onPlay,
+  onDrop,
+}: {
+  item: Track;
+  index: number;
+  total: number;
+  colors: ReturnType<typeof useColors>;
+  onPlay: () => void;
+  onDrop: (fromIndex: number, targetIndex: number) => void;
+}) {
+  const translation = useRef(new Animated.Value(0)).current;
+  const targetIndex = useRef(index);
+  const [dragging, setDragging] = useState(false);
+
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      targetIndex.current = index;
+      setDragging(true);
+      translation.setValue(0);
+    },
+    onPanResponderMove: (_, gesture) => {
+      const nextTarget = Math.max(0, Math.min(total - 1, index + Math.round(gesture.dy / 88)));
+      targetIndex.current = nextTarget;
+      translation.setValue(gesture.dy);
+    },
+    onPanResponderRelease: () => {
+      const destination = targetIndex.current;
+      setDragging(false);
+      Animated.spring(translation, { toValue: 0, useNativeDriver: true, damping: 18, stiffness: 180 }).start();
+      if (destination !== index) onDrop(index, destination);
+    },
+    onPanResponderTerminate: () => {
+      setDragging(false);
+      Animated.spring(translation, { toValue: 0, useNativeDriver: true, damping: 18, stiffness: 180 }).start();
+    },
+  }), [index, onDrop, total, translation]);
+
+  return (
+    <Animated.View style={[styles.row, { borderBottomColor: colors.border, backgroundColor: dragging ? colors.card : 'transparent', zIndex: dragging ? 10 : 0, transform: [{ translateY: translation }] }]}>
+      <Pressable onPress={onPlay} style={({ pressed }) => [styles.rowMain, { opacity: pressed ? 0.72 : 1 }]}>
+        <MusicArtwork coverKey={item.coverKey} size={54} style={styles.trackArt} />
+        <View style={styles.trackCopy}>
+          <Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{item.title}</Text>
+          <Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{item.artist}</Text>
+          <View style={styles.trackMeta}>
+            <Text style={[styles.trackMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>{formatImportedDate(item.importedAt)}</Text>
+            <Text style={[styles.trackMetaText, { color: colors.mutedForeground }]}>• {formatDuration(item.duration)}</Text>
+          </View>
+        </View>
+        <Text style={[styles.index, { color: colors.mutedForeground }]}>{String(index + 1).padStart(2, '0')}</Text>
+      </Pressable>
+      <View {...panResponder.panHandlers} accessible accessibilityRole="adjustable" accessibilityLabel={`Drag ${item.title} to reorder`} style={styles.dragHandle}>
+        <View style={styles.dragHint}>
+          {[0, 1, 2].map((line) => <View key={line} style={[styles.dragHintLine, { backgroundColor: colors.mutedForeground }]} />)}
+        </View>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -137,8 +214,8 @@ const styles = StyleSheet.create({
   songsTitle: { fontFamily: 'Inter_700Bold', fontSize: 18 },
   songsCount: { fontFamily: 'Inter_500Medium', fontSize: 12 },
   orderHint: { fontFamily: 'Inter_400Regular', fontSize: 10 },
-  row: { paddingVertical: 9, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
-  rowMain: { flex: 1, minHeight: 58, flexDirection: 'row', alignItems: 'center' },
+  row: { height: 88, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  rowMain: { flex: 1, height: '100%', flexDirection: 'row', alignItems: 'center' },
   trackArt: { borderRadius: 14, shadowOpacity: 0 },
   trackCopy: { flex: 1, marginLeft: 13 },
   trackTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
@@ -146,8 +223,9 @@ const styles = StyleSheet.create({
   trackMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
   trackMetaText: { fontFamily: 'Inter_400Regular', fontSize: 10 },
   index: { fontFamily: 'Inter_600SemiBold', fontSize: 12, marginLeft: 10 },
-  reorderControls: { marginLeft: 9, gap: 5 },
-  reorderButton: { width: 32, height: 27, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  dragHandle: { width: 44, height: 58, alignItems: 'center', justifyContent: 'center', marginLeft: 5 },
+  dragHint: { width: 18, height: 22, justifyContent: 'space-between' },
+  dragHintLine: { height: 2, borderRadius: 2, width: 18 },
   emptyCard: { alignItems: 'center', borderRadius: 20, borderWidth: 1, padding: 24, marginTop: 8 },
   emptyCardTitle: { fontFamily: 'Inter_700Bold', fontSize: 16, textAlign: 'center', marginTop: 14 },
   emptyCardCopy: { fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20, marginTop: 8 },
