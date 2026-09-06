@@ -3,7 +3,7 @@ import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-au
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 
 export type CoverKey = 'midnight' | 'neon' | 'dusk';
 
@@ -85,38 +85,45 @@ export function MusicProvider({ children }: PropsWithChildren) {
   };
 
   const addTracks = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['audio/mpeg', 'audio/*'],
-      copyToCacheDirectory: true,
-      multiple: true,
-    });
-    if (result.canceled) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['audio/mpeg', 'audio/*'],
+        copyToCacheDirectory: true,
+        multiple: true,
+      });
+      if (result.canceled || result.assets.length === 0) return;
 
-    const directory = FileSystem.documentDirectory;
-    if (!directory) {
-      Alert.alert('Storage unavailable', 'This device did not provide a local music folder.');
-      return;
+      const directory = FileSystem.documentDirectory;
+      const musicDirectory = directory ? `${directory}music/` : null;
+      if (musicDirectory && Platform.OS !== 'web') {
+        await FileSystem.makeDirectoryAsync(musicDirectory, { intermediates: true });
+      }
+
+      const imported = await Promise.all(result.assets.map(async (asset, index) => {
+        let playableUri = asset.uri;
+        if (musicDirectory && Platform.OS !== 'web') {
+          const safeName = asset.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+          const destination = `${musicDirectory}${Date.now()}-${index}-${safeName}`;
+          await FileSystem.copyAsync({ from: asset.uri, to: destination });
+          playableUri = destination;
+        }
+        const nextIndex = tracks.length + index;
+        return {
+          id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+          title: titleFromFileName(asset.name),
+          artist: 'Imported from Files',
+          album: 'My offline library',
+          uri: playableUri,
+          coverKey: (['midnight', 'neon', 'dusk'] as CoverKey[])[nextIndex % 3],
+        } satisfies Track;
+      }));
+      const nextTracks = [...tracks, ...imported];
+      await persistTracks(nextTracks);
+      if (!currentTrack && imported[0]) setCurrentTrack(imported[0]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'The file could not be imported.';
+      Alert.alert('Import failed', message);
     }
-    const musicDirectory = `${directory}music/`;
-    await FileSystem.makeDirectoryAsync(musicDirectory, { intermediates: true });
-
-    const imported = await Promise.all(result.assets.map(async (asset, index) => {
-      const safeName = asset.name.replace(/[^a-zA-Z0-9._-]/g, '-');
-      const destination = `${musicDirectory}${Date.now()}-${index}-${safeName}`;
-      await FileSystem.copyAsync({ from: asset.uri, to: destination });
-      const nextIndex = tracks.length + index;
-      return {
-        id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 8)}`,
-        title: titleFromFileName(asset.name),
-        artist: 'Imported from Files',
-        album: 'My offline library',
-        uri: destination,
-        coverKey: (['midnight', 'neon', 'dusk'] as CoverKey[])[nextIndex % 3],
-      } satisfies Track;
-    }));
-    const nextTracks = [...tracks, ...imported];
-    await persistTracks(nextTracks);
-    if (!currentTrack && imported[0]) setCurrentTrack(imported[0]);
   };
 
   const playTrack = (track: Track) => {
