@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { NowPlayingBar } from '@/components/NowPlayingBar';
+import { ScreenTransition } from '@/components/ScreenTransition';
 import { useMusic } from '@/context/MusicContext';
 import { useColors } from '@/hooks/useColors';
 
@@ -14,9 +15,12 @@ export default function HomeScreen() {
   const { tracks, currentTrack, playTrack, addTracks } = useMusic();
   const recent = tracks.slice(0, 3);
 
+  const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
+
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top + 18, paddingBottom: 112 }} showsVerticalScrollIndicator={false}>
+    <ScreenTransition>
+      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <ScrollView contentContainerStyle={{ paddingTop: topInset + 18, paddingBottom: 112 }} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}><View><Text style={[styles.greeting, { color: colors.mutedForeground }]}>YOUR SOUNDTRACK</Text><Text style={[styles.title, { color: colors.foreground }]}>Good evening</Text></View><Pressable onPress={() => router.push('/(tabs)/settings')} style={[styles.profile, { backgroundColor: colors.accent }]}><Text style={[styles.profileText, { color: colors.primary }]}>M</Text></Pressable></View>
         <ImageBackground source={require('@/assets/images/cover-midnight.jpg')} imageStyle={styles.heroImage} style={styles.hero}>
           <View style={styles.heroShade} />
@@ -25,9 +29,10 @@ export default function HomeScreen() {
         <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recently added</Text><Pressable onPress={() => router.push('/(tabs)/library')}><Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text></Pressable></View>
         {recent.length === 0 ? <View style={[styles.emptyRow, { borderColor: colors.border }]}><Feather name="music" size={18} color={colors.mutedForeground} /><Text style={[styles.emptyRowText, { color: colors.mutedForeground }]}>Import a few MP3s to see them here.</Text></View> : recent.map((track) => <Pressable key={track.id} onPress={() => { playTrack(track); router.push('/player'); }} style={({ pressed }) => [styles.trackRow, { opacity: pressed ? 0.7 : 1 }]}><MusicArtwork coverKey={track.coverKey} size={52} style={styles.trackArt} /><View style={styles.trackCopy}><Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{track.title}</Text><Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{track.artist}</Text></View><Feather name="play-circle" size={23} color={colors.primary} /></Pressable>)}
         <View style={[styles.tip, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.tipIcon, { backgroundColor: colors.accent }]}><Feather name="headphones" size={17} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[styles.tipTitle, { color: colors.foreground }]}>Made for your pocket</Text><Text style={[styles.tipCopy, { color: colors.mutedForeground }]}>Playback keeps going with your screen locked.</Text></View></View>
-      </ScrollView>
-      {currentTrack ? <NowPlayingBar onPress={() => router.push('/player')} /> : null}
-    </View>
+        </ScrollView>
+        {currentTrack ? <NowPlayingBar onPress={() => router.push('/player')} /> : null}
+      </View>
+    </ScreenTransition>
   );
 }
 

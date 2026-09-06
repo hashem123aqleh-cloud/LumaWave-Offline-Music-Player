@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { useColors } from '@/hooks/useColors';
@@ -21,10 +21,12 @@ export default function PlayerScreen() {
     return <View style={[styles.empty, { backgroundColor: colors.background }]}><Text style={{ color: colors.mutedForeground }}>Add a track to start listening.</Text></View>;
   }
 
+  const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: topInset + 8 }]}>
         <Pressable onPress={() => router.back()} style={styles.headerButton}><Feather name="chevron-down" size={25} color={colors.foreground} /></Pressable>
         <Text style={[styles.headerLabel, { color: colors.mutedForeground }]}>NOW PLAYING</Text>
         <Pressable style={styles.headerButton}><Feather name="more-horizontal" size={24} color={colors.foreground} /></Pressable>

@@ -1,9 +1,10 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { NowPlayingBar } from '@/components/NowPlayingBar';
+import { ScreenTransition } from '@/components/ScreenTransition';
 import { useMusic } from '@/context/MusicContext';
 import { useColors } from '@/hooks/useColors';
 
@@ -13,18 +14,22 @@ export default function LibraryScreen() {
   const router = useRouter();
   const { tracks, addTracks, playTrack, removeTrack, isLoading } = useMusic();
 
+  const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
+
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <FlatList
+    <ScreenTransition>
+      <View style={[styles.screen, { backgroundColor: colors.background }]}>
+        <FlatList
         data={tracks}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingTop: insets.top + 22, paddingBottom: 112 }}
+        contentContainerStyle={{ paddingTop: topInset + 22, paddingBottom: 112 }}
         ListHeaderComponent={<View style={styles.header}><View><Text style={[styles.kicker, { color: colors.primary }]}>YOUR COLLECTION</Text><Text style={[styles.title, { color: colors.foreground }]}>Library</Text></View><Pressable onPress={() => void addTracks()} style={[styles.addButton, { backgroundColor: colors.primary }]}><Feather name="plus" size={20} color={colors.primaryForeground} /></Pressable></View>}
         ListEmptyComponent={!isLoading ? <View style={[styles.empty, { borderColor: colors.border, backgroundColor: colors.card }]}><View style={[styles.emptyIcon, { backgroundColor: colors.accent }]}><Feather name="music" size={22} color={colors.primary} /></View><Text style={[styles.emptyTitle, { color: colors.foreground }]}>Your music, your way</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Import MP3s from the Files app and they’ll stay available offline.</Text><Pressable onPress={() => void addTracks()} style={[styles.importButton, { backgroundColor: colors.foreground }]}><Text style={[styles.importButtonText, { color: colors.background }]}>Import MP3s</Text></Pressable></View> : null}
         renderItem={({ item, index }) => <Pressable onPress={() => { playTrack(item); router.push('/player'); }} onLongPress={() => removeTrack(item.id)} style={({ pressed }) => [styles.row, { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 }]}><MusicArtwork coverKey={item.coverKey} size={55} style={styles.artwork} /><View style={styles.rowCopy}><Text style={[styles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>{item.title}</Text><Text style={[styles.rowArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{item.artist}</Text></View><Text style={[styles.index, { color: colors.mutedForeground }]}>{String(index + 1).padStart(2, '0')}</Text></Pressable>}
-      />
-      <NowPlayingBar onPress={() => router.push('/player')} />
-    </View>
+        />
+        <NowPlayingBar onPress={() => router.push('/player')} />
+      </View>
+    </ScreenTransition>
   );
 }
 
