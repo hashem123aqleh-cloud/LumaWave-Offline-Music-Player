@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
+import { createAudioPlayer, useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import React, { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
@@ -15,6 +15,8 @@ export type Track = {
   uri: string;
   coverKey: CoverKey;
   isFavorite?: boolean;
+  importedAt?: number;
+  duration?: number;
 };
 
 export type Playlist = {
@@ -45,7 +47,7 @@ type MusicContextValue = {
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => Promise<void>;
   setPlaylistTracks: (playlistId: string, trackIds: string[]) => Promise<void>;
   setVolume: (value: number) => void;
-  playTrack: (track: Track) => void;
+  playTrack: (track: Track, queueTrackIds?: string[]) => void;
   togglePlayback: () => void;
   skipForward: () => void;
   skipBack: () => void;
@@ -67,12 +69,41 @@ function titleFromFileName(name: string) {
   return name.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Untitled track';
 }
 
+async function readAudioDuration(uri: string): Promise<number | undefined> {
+  if (Platform.OS === 'web') return undefined;
+
+  return new Promise((resolve) => {
+    let settled = false;
+    let subscription: { remove: () => void } | undefined;
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const metadataPlayer = createAudioPlayer(uri);
+      const finish = (duration?: number) => {
+        if (settled) return;
+        settled = true;
+        if (timeout) clearTimeout(timeout);
+        subscription?.remove();
+        metadataPlayer.release();
+        resolve(duration && Number.isFinite(duration) && duration > 0 ? Math.round(duration) : undefined);
+      };
+      subscription = metadataPlayer.addListener('playbackStatusUpdate', (nextStatus) => {
+        if (nextStatus.isLoaded) finish(nextStatus.duration);
+      });
+      if (metadataPlayer.isLoaded) finish(metadataPlayer.duration);
+      timeout = setTimeout(() => finish(), 5000);
+    } catch {
+      resolve(undefined);
+    }
+  });
+}
+
 export function MusicProvider({ children }: PropsWithChildren) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
+  const [queueTrackIds, setQueueTrackIds] = useState<string[]>([]);
   const [volume, setVolumeState] = useState(1);
   const player = useAudioPlayer(currentTrack?.uri ?? null, { updateInterval: 250 });
   const status = useAudioPlayerStatus(player);
@@ -126,6 +157,16 @@ export function MusicProvider({ children }: PropsWithChildren) {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextTracks));
   };
 
+  useEffect(() => {
+    if (!currentTrack || !status.isLoaded || !Number.isFinite(status.duration) || status.duration <= 0) return;
+    const duration = Math.round(status.duration);
+    if (currentTrack.duration === duration) return;
+    const nextTracks = tracks.map((track) => track.id === currentTrack.id ? { ...track, duration } : track);
+    setTracks(nextTracks);
+    setCurrentTrack({ ...currentTrack, duration });
+    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextTracks));
+  }, [currentTrack, status.duration, status.isLoaded, tracks]);
+
   const addTracks = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -158,11 +199,20 @@ export function MusicProvider({ children }: PropsWithChildren) {
           uri: playableUri,
           coverKey: coverKeys[nextIndex % coverKeys.length],
           isFavorite: false,
+          importedAt: Date.now(),
         } satisfies Track;
       }));
       const nextTracks = [...tracks, ...imported];
       await persistTracks(nextTracks);
       if (!currentTrack && imported[0]) setCurrentTrack(imported[0]);
+      if (Platform.OS !== 'web') {
+        void Promise.all(imported.map(async (track) => ({ id: track.id, duration: await readAudioDuration(track.uri) }))).then(async (durationUpdates) => {
+          const knownDurations = new Map(durationUpdates.filter((item): item is { id: string; duration: number } => typeof item.duration === 'number').map((item) => [item.id, item.duration]));
+          if (!knownDurations.size) return;
+          const tracksWithDurations = nextTracks.map((track) => knownDurations.has(track.id) ? { ...track, duration: knownDurations.get(track.id) } : track);
+          await persistTracks(tracksWithDurations);
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'The file could not be imported.';
       Alert.alert('Import failed', message);
@@ -175,7 +225,9 @@ export function MusicProvider({ children }: PropsWithChildren) {
     else setShouldAutoPlay(true);
   };
 
-  const playTrack = (track: Track) => {
+  const playTrack = (track: Track, customQueueTrackIds?: string[]) => {
+    const nextQueue = customQueueTrackIds?.length ? customQueueTrackIds : tracks.map((item) => item.id);
+    setQueueTrackIds(nextQueue);
     if (currentTrack?.id === track.id) {
       requestPlay();
       return;
@@ -192,8 +244,11 @@ export function MusicProvider({ children }: PropsWithChildren) {
 
   const skip = (direction: 1 | -1) => {
     if (!tracks.length || !currentTrack) return;
-    const index = tracks.findIndex((track) => track.id === currentTrack.id);
-    const next = tracks[(index + direction + tracks.length) % tracks.length];
+    const activeQueue = queueTrackIds.length ? queueTrackIds : tracks.map((track) => track.id);
+    const queueTracks = activeQueue.map((trackId) => tracks.find((track) => track.id === trackId)).filter((track): track is Track => Boolean(track));
+    if (!queueTracks.length) return;
+    const index = queueTracks.findIndex((track) => track.id === currentTrack.id);
+    const next = queueTracks[(index + direction + queueTracks.length) % queueTracks.length];
     setCurrentTrack(next);
     setShouldAutoPlay(status.playing);
   };
@@ -218,6 +273,7 @@ export function MusicProvider({ children }: PropsWithChildren) {
     }
 
     const nextTracks = tracks.filter((track) => track.id !== id);
+    setQueueTrackIds((currentQueue) => currentQueue.filter((trackId) => trackId !== id));
     await persistTracks(nextTracks);
     const nextPlaylists = playlists.map((playlist) => ({
       ...playlist,
@@ -330,7 +386,7 @@ export function MusicProvider({ children }: PropsWithChildren) {
     skipForward: () => skip(1),
     skipBack: () => skip(-1),
     seekTo: (seconds) => player.seekTo(seconds),
-  }), [currentTrack, isLoading, player, playlists, status.currentTime, status.duration, status.playing, tracks, volume]);
+  }), [currentTrack, isLoading, player, playlists, queueTrackIds, status.currentTime, status.duration, status.playing, tracks, volume]);
 
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;
 }

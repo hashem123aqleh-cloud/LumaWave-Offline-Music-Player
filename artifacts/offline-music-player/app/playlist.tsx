@@ -9,6 +9,16 @@ import { ScreenTransition } from '@/components/ScreenTransition';
 import { Track, useMusic } from '@/context/MusicContext';
 import { useColors } from '@/hooks/useColors';
 
+function formatDuration(seconds?: number) {
+  if (!seconds || !Number.isFinite(seconds)) return 'Duration pending';
+  return `${Math.floor(seconds / 60)}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
+}
+
+function formatImportedDate(timestamp?: number) {
+  if (!timestamp) return 'Imported recently';
+  return `Imported ${new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`;
+}
+
 export default function PlaylistScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -45,6 +55,14 @@ export default function PlaylistScreen() {
     router.back();
   };
 
+  const moveTrack = async (index: number, direction: -1 | 1) => {
+    const nextIds = [...playlist.trackIds];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= nextIds.length) return;
+    [nextIds[index], nextIds[targetIndex]] = [nextIds[targetIndex], nextIds[index]];
+    await setPlaylistTracks(playlist.id, nextIds);
+  };
+
   return (
     <ScreenTransition>
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -65,14 +83,14 @@ export default function PlaylistScreen() {
                 <View style={styles.heroCopy}><Text style={[styles.title, { color: colors.foreground }]}>{playlist.name}</Text><Text style={[styles.description, { color: colors.mutedForeground }]}>{playlist.description || 'A playlist made for your moments.'}</Text><Text style={[styles.count, { color: colors.primary }]}>{playlistTracks.length} {playlistTracks.length === 1 ? 'song' : 'songs'}</Text></View>
               </View>
               <View style={styles.actionRow}>
-                <Pressable onPress={() => playlistTracks[0] && playTrack(playlistTracks[0])} style={[styles.playAll, { backgroundColor: colors.primary }]}><Feather name="play" size={17} color={colors.primaryForeground} /><Text style={[styles.playAllText, { color: colors.primaryForeground }]}>Play playlist</Text></Pressable>
+                <Pressable onPress={() => playlistTracks[0] && playTrack(playlistTracks[0], playlist.trackIds)} style={[styles.playAll, { backgroundColor: colors.primary }]}><Feather name="play" size={17} color={colors.primaryForeground} /><Text style={[styles.playAllText, { color: colors.primaryForeground }]}>Play playlist</Text></Pressable>
                 <Pressable onPress={openAddSongs} style={[styles.addSongs, { backgroundColor: colors.secondary }]}><Feather name="plus" size={18} color={colors.foreground} /><Text style={[styles.addSongsText, { color: colors.foreground }]}>Add songs</Text></Pressable>
               </View>
-              <View style={styles.songsHeader}><Text style={[styles.songsTitle, { color: colors.foreground }]}>Songs</Text><Text style={[styles.songsCount, { color: colors.mutedForeground }]}>{playlistTracks.length}</Text></View>
+              <View style={styles.songsHeader}><View style={styles.songsHeadingCopy}><Text style={[styles.songsTitle, { color: colors.foreground }]}>Songs</Text><Text style={[styles.songsCount, { color: colors.mutedForeground }]}>{playlistTracks.length}</Text></View><Text style={[styles.orderHint, { color: colors.mutedForeground }]}>Use arrows to reorder</Text></View>
             </View>
           }
           ListEmptyComponent={<View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}><Feather name="music" size={22} color={colors.primary} /><Text style={[styles.emptyCardTitle, { color: colors.foreground }]}>This playlist is ready for its first song</Text><Text style={[styles.emptyCardCopy, { color: colors.mutedForeground }]}>Add tracks from your library whenever inspiration strikes.</Text><Pressable onPress={openAddSongs} style={[styles.emptyAdd, { backgroundColor: colors.foreground }]}><Text style={[styles.emptyAddText, { color: colors.background }]}>Choose songs</Text></Pressable></View>}
-          renderItem={({ item, index }) => <Pressable onPress={() => playTrack(item)} onLongPress={() => void setPlaylistTracks(playlist.id, playlist.trackIds.filter((trackId) => trackId !== item.id))} style={({ pressed }) => [styles.row, { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 }]}><MusicArtwork coverKey={item.coverKey} size={54} style={styles.trackArt} /><View style={styles.trackCopy}><Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{item.title}</Text><Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{item.artist}</Text></View><Text style={[styles.index, { color: colors.mutedForeground }]}>{String(index + 1).padStart(2, '0')}</Text></Pressable>}
+          renderItem={({ item, index }) => <View style={[styles.row, { borderBottomColor: colors.border }]}><Pressable onPress={() => playTrack(item, playlist.trackIds)} onLongPress={() => void setPlaylistTracks(playlist.id, playlist.trackIds.filter((trackId) => trackId !== item.id))} style={({ pressed }) => [styles.rowMain, { opacity: pressed ? 0.72 : 1 }]}><MusicArtwork coverKey={item.coverKey} size={54} style={styles.trackArt} /><View style={styles.trackCopy}><Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{item.title}</Text><Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{item.artist}</Text><View style={styles.trackMeta}><Text style={[styles.trackMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>{formatImportedDate(item.importedAt)}</Text><Text style={[styles.trackMetaText, { color: colors.mutedForeground }]}>• {formatDuration(item.duration)}</Text></View></View><Text style={[styles.index, { color: colors.mutedForeground }]}>{String(index + 1).padStart(2, '0')}</Text></Pressable><View style={styles.reorderControls}><Pressable accessibilityLabel="Move song up" disabled={index === 0} onPress={() => void moveTrack(index, -1)} style={({ pressed }) => [styles.reorderButton, { backgroundColor: colors.secondary, opacity: index === 0 ? 0.28 : pressed ? 0.6 : 1 }]}><Feather name="chevron-up" size={17} color={colors.foreground} /></Pressable><Pressable accessibilityLabel="Move song down" disabled={index === playlistTracks.length - 1} onPress={() => void moveTrack(index, 1)} style={({ pressed }) => [styles.reorderButton, { backgroundColor: colors.secondary, opacity: index === playlistTracks.length - 1 ? 0.28 : pressed ? 0.6 : 1 }]}><Feather name="chevron-down" size={17} color={colors.foreground} /></Pressable></View></View>}
         />
         <Pressable onPress={() => void deleteCurrentPlaylist()} style={styles.deleteButton}><Feather name="trash-2" size={15} color={colors.destructive} /><Text style={[styles.deleteText, { color: colors.destructive }]}>Delete playlist</Text></Pressable>
         <PlaylistEditorModal visible={showEditor} title="Edit playlist" saveLabel="Save changes" initialName={playlist.name} initialDescription={playlist.description} initialCoverKey={playlist.coverKey} onClose={() => setShowEditor(false)} onSave={(name, description, coverKey) => { void updatePlaylist(playlist.id, { name, description, coverKey }); setShowEditor(false); }} />
@@ -114,15 +132,22 @@ const styles = StyleSheet.create({
   playAllText: { fontFamily: 'Inter_700Bold', fontSize: 13 },
   addSongs: { flex: 1, minHeight: 50, borderRadius: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   addSongsText: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
-  songsHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 31, marginBottom: 8 },
+  songsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 31, marginBottom: 8 },
+  songsHeadingCopy: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   songsTitle: { fontFamily: 'Inter_700Bold', fontSize: 18 },
   songsCount: { fontFamily: 'Inter_500Medium', fontSize: 12 },
-  row: { paddingVertical: 11, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  orderHint: { fontFamily: 'Inter_400Regular', fontSize: 10 },
+  row: { paddingVertical: 9, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  rowMain: { flex: 1, minHeight: 58, flexDirection: 'row', alignItems: 'center' },
   trackArt: { borderRadius: 14, shadowOpacity: 0 },
   trackCopy: { flex: 1, marginLeft: 13 },
   trackTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
   trackArtist: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 5 },
+  trackMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
+  trackMetaText: { fontFamily: 'Inter_400Regular', fontSize: 10 },
   index: { fontFamily: 'Inter_600SemiBold', fontSize: 12, marginLeft: 10 },
+  reorderControls: { marginLeft: 9, gap: 5 },
+  reorderButton: { width: 32, height: 27, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   emptyCard: { alignItems: 'center', borderRadius: 20, borderWidth: 1, padding: 24, marginTop: 8 },
   emptyCardTitle: { fontFamily: 'Inter_700Bold', fontSize: 16, textAlign: 'center', marginTop: 14 },
   emptyCardCopy: { fontFamily: 'Inter_400Regular', fontSize: 13, textAlign: 'center', lineHeight: 20, marginTop: 8 },
