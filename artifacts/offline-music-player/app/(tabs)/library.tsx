@@ -65,7 +65,7 @@ export default function LibraryScreen() {
           contentContainerStyle={{ paddingTop: topInset + 22, paddingBottom: 126 }}
           ListHeaderComponent={header}
           ListEmptyComponent={!isLoading ? <View style={[styles.empty, { borderColor: colors.border, backgroundColor: colors.card }]}><View style={[styles.emptyIcon, { backgroundColor: colors.accent }]}><Feather name={filter === 'favorites' ? 'heart' : 'music'} size={22} color={colors.primary} /></View><Text style={[styles.emptyTitle, { color: colors.foreground }]}>{query ? 'No matches found' : filter === 'favorites' ? 'No favorites yet' : 'Your music, your way'}</Text><Text style={[styles.emptyText, { color: colors.mutedForeground }]}>{query ? 'Try another title or artist.' : filter === 'favorites' ? 'Tap the heart in the player to save a song here.' : 'Import MP3s from Files and they’ll stay available offline.'}</Text><Pressable onPress={() => void addTracks()} style={[styles.importButton, { backgroundColor: colors.foreground }]}><Text style={[styles.importButtonText, { color: colors.background }]}>{query || filter === 'favorites' ? 'Import MP3s' : 'Import MP3s'}</Text></Pressable></View> : null}
-          renderItem={({ item, index }) => <Pressable onPress={() => { playTrack(item); router.push('/player'); }} style={({ pressed }) => [styles.row, { borderBottomColor: colors.border, opacity: pressed ? 0.72 : 1 }]}><MusicArtwork coverKey={item.coverKey} size={55} style={styles.artwork} /><View style={styles.rowCopy}><Text style={[styles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>{item.title}</Text><Text style={[styles.rowArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{item.artist}</Text></View><Text style={[styles.index, { color: colors.mutedForeground }]}>{String(index + 1).padStart(2, '0')}</Text><Pressable onPress={() => openTrackMenu(item)} hitSlop={10} style={styles.moreButton}><Feather name="more-horizontal" size={19} color={colors.mutedForeground} /></Pressable></Pressable>}
+          renderItem={({ item, index }) => <View style={[styles.row, { borderBottomColor: colors.border }]}><Pressable onPress={() => { playTrack(item); router.push('/player'); }} style={({ pressed }) => [styles.rowMain, { opacity: pressed ? 0.72 : 1 }]}><MusicArtwork coverKey={item.coverKey} size={55} style={styles.artwork} /><View style={styles.rowCopy}><Text style={[styles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>{item.title}</Text><Text style={[styles.rowArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{item.artist}</Text></View><Text style={[styles.index, { color: colors.mutedForeground }]}>{String(index + 1).padStart(2, '0')}</Text></Pressable><Pressable accessibilityLabel={`Actions for ${item.title}`} accessibilityRole="button" onPress={() => openTrackMenu(item)} hitSlop={8} style={({ pressed }) => [styles.moreButton, { backgroundColor: colors.secondary, opacity: pressed ? 0.65 : 1 }]}><Feather name="more-horizontal" size={23} color={colors.foreground} /></Pressable></View>}
         />
         <NowPlayingBar onPress={() => router.push('/player')} />
         <PlaylistEditorModal visible={showCreate} title="New playlist" saveLabel="Create playlist" onClose={() => setShowCreate(false)} onSave={(name, description, coverKey) => { void createPlaylist(name, description, coverKey); setShowCreate(false); }} />
@@ -105,11 +105,12 @@ const styles = StyleSheet.create({
   emptyText: { fontFamily: 'Inter_400Regular', fontSize: 14, textAlign: 'center', lineHeight: 21, marginTop: 9 },
   importButton: { paddingHorizontal: 20, paddingVertical: 13, borderRadius: 14, marginTop: 20 },
   importButtonText: { fontFamily: 'Inter_700Bold', fontSize: 13 },
-  row: { marginHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  row: { marginHorizontal: 20, paddingVertical: 10, borderBottomWidth: 1, flexDirection: 'row', alignItems: 'center' },
+  rowMain: { flex: 1, minHeight: 58, flexDirection: 'row', alignItems: 'center' },
   artwork: { borderRadius: 14, shadowOpacity: 0 },
   rowCopy: { flex: 1, marginLeft: 14 },
   rowTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 15 },
   rowArtist: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 6 },
   index: { fontFamily: 'Inter_600SemiBold', fontSize: 12, marginLeft: 10 },
-  moreButton: { width: 30, alignItems: 'flex-end', marginLeft: 7 },
+  moreButton: { width: 48, height: 48, borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginLeft: 9 },
 });
