@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/"
+title = "Offline Music Player"
+description = "A personal iPhone music player for importing MP3 files the user owns, organizing them into a library, and playing them offline with a rich music-app experience."
+version = "1.0.0"
+id = "artifacts/offline-music-player"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/" ]
+localPort = 20415
+
+[services.development]
+run = "pnpm --filter @workspace/offline-music-player run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/offline-music-player", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/offline-music-player", "run", "serve" ]
+
+[services.env]
+PORT = "20415"
+BASE_PATH = "/"

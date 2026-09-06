@@ -1,6 +1,6 @@
-# [Project name]
+# Offline Music Player
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A private iPhone music player for importing MP3s the user owns and listening offline with background playback.
 
 ## Run & Operate
 
@@ -22,15 +22,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/offline-music-player` — Expo mobile app and local music library.
+- `artifacts/offline-music-player/context/MusicContext.tsx` — AsyncStorage-backed library and Expo Audio playback state.
+- `artifacts/offline-music-player/app/(tabs)` — Home, Library, and Settings screens.
+- `artifacts/offline-music-player/app/player.tsx` — full-screen player.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first version is local-first: MP3 files are copied into the app's document directory and library metadata is persisted with AsyncStorage.
+- Expo Audio is configured for silent-mode playback and background playback; the `expo-audio` config plugin supplies iOS background audio support.
+- The app imports files the user owns through the iOS Files picker rather than downloading protected music from streaming services.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Import one or more MP3 files from Files.
+- Browse an offline library with generated album artwork.
+- Play, pause, skip, seek, and use a mini player.
+- Continue audio while the screen is locked or the app is backgrounded.
 
 ## User preferences
 
