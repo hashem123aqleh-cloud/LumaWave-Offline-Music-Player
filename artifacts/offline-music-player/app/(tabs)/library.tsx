@@ -34,7 +34,7 @@ export default function LibraryScreen() {
     Alert.alert(track.title, 'Choose an action', [
       { text: track.isFavorite ? 'Remove from Favorites' : 'Add to Favorites', onPress: () => void toggleFavorite(track.id) },
       ...playlistButtons,
-      { text: 'Delete from Library', style: 'destructive', onPress: () => void removeTrack(track.id) },
+      { text: 'Delete imported file', style: 'destructive', onPress: () => void removeTrack(track.id) },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };

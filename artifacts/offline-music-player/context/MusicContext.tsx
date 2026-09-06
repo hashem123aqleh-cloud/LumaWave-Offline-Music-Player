@@ -199,6 +199,24 @@ export function MusicProvider({ children }: PropsWithChildren) {
   };
 
   const removeTrack = async (id: string) => {
+    const trackToRemove = tracks.find((track) => track.id === id);
+    if (!trackToRemove) return;
+
+    if (currentTrack?.id === id) {
+      player.pause();
+    }
+
+    const appMusicDirectory = FileSystem.documentDirectory ? `${FileSystem.documentDirectory}music/` : null;
+    const isAppOwnedFile = Platform.OS !== 'web' && appMusicDirectory && trackToRemove.uri.startsWith(appMusicDirectory);
+    if (isAppOwnedFile) {
+      try {
+        await FileSystem.deleteAsync(trackToRemove.uri, { idempotent: true });
+      } catch {
+        Alert.alert('Delete failed', 'The imported file could not be removed from this device.');
+        return;
+      }
+    }
+
     const nextTracks = tracks.filter((track) => track.id !== id);
     await persistTracks(nextTracks);
     const nextPlaylists = playlists.map((playlist) => ({
