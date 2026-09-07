@@ -1,17 +1,81 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ImageBackground, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { ScreenTransition } from '@/components/ScreenTransition';
 import { useMusic } from '@/context/MusicContext';
 import { useColors } from '@/hooks/useColors';
 
+function MusicOrb({ colors, onPress }: { colors: ReturnType<typeof useColors>; onPress: () => void }) {
+  const noteScale = useSharedValue(1);
+  const waveOne = useSharedValue(0);
+  const waveTwo = useSharedValue(0);
+  const waveThree = useSharedValue(0);
+
+  useEffect(() => {
+    noteScale.value = withRepeat(
+      withSequence(
+        withTiming(1.07, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.sin) }),
+      ),
+      -1,
+      false,
+    );
+    const wave = (delay: number) => withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 2200, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 0 }),
+        ),
+        -1,
+        false,
+      ),
+    );
+    waveOne.value = wave(0);
+    waveTwo.value = wave(720);
+    waveThree.value = wave(1440);
+  }, [noteScale, waveOne, waveTwo, waveThree]);
+
+  const noteStyle = useAnimatedStyle(() => ({ transform: [{ scale: noteScale.value }] }));
+  const waveOneStyle = useAnimatedStyle(() => ({ opacity: 0.24 * (1 - waveOne.value), transform: [{ scale: 1 + waveOne.value * 0.62 }] }));
+  const waveTwoStyle = useAnimatedStyle(() => ({ opacity: 0.24 * (1 - waveTwo.value), transform: [{ scale: 1 + waveTwo.value * 0.62 }] }));
+  const waveThreeStyle = useAnimatedStyle(() => ({ opacity: 0.24 * (1 - waveThree.value), transform: [{ scale: 1 + waveThree.value * 0.62 }] }));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Open your music library"
+      style={({ pressed }) => [styles.orbHero, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.86 : 1 }]}
+    >
+      <LinearGradient colors={[colors.accent, colors.background]} start={{ x: 0.15, y: 0 }} end={{ x: 0.85, y: 1 }} style={StyleSheet.absoluteFill} />
+      <View style={styles.orbContent}>
+        <View style={[styles.waveField, { pointerEvents: 'none' }]}>
+          <Animated.View style={[styles.waveRing, { borderColor: colors.highlight }, waveOneStyle]} />
+          <Animated.View style={[styles.waveRing, { borderColor: colors.primary }, waveTwoStyle]} />
+          <Animated.View style={[styles.waveRing, { borderColor: colors.highlight }, waveThreeStyle]} />
+          <View style={[styles.orbGlow, { backgroundColor: colors.primary }]} />
+          <Animated.View style={[styles.orbCore, { backgroundColor: colors.foreground }, noteStyle]}>
+            <Feather name="music" size={62} color={colors.background} />
+          </Animated.View>
+        </View>
+        <Text style={[styles.orbTitle, { color: colors.foreground }]}>Open your library</Text>
+        <Text style={[styles.orbCopy, { color: colors.accentForeground }]}>Tap to browse your offline collection</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { tracks, playTrack, addTracks } = useMusic();
+  const { tracks, playTrack } = useMusic();
   const recent = tracks.slice(0, 3);
 
   const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
@@ -21,10 +85,7 @@ export default function HomeScreen() {
       <View style={[styles.screen, { backgroundColor: colors.background }]}>
         <ScrollView contentContainerStyle={{ paddingTop: topInset + 18, paddingBottom: 112 }} showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}><View><Text style={[styles.greeting, { color: colors.mutedForeground }]}>YOUR SOUNDTRACK</Text><Text style={[styles.title, { color: colors.foreground }]}>Good evening</Text></View><Pressable onPress={() => router.push('/(tabs)/settings')} style={[styles.profile, { backgroundColor: colors.accent }]}><Text style={[styles.profileText, { color: colors.primary }]}>M</Text></Pressable></View>
-        <ImageBackground source={require('@/assets/images/cover-midnight.jpg')} imageStyle={styles.heroImage} style={styles.hero}>
-          <View style={styles.heroShade} />
-          <View style={styles.heroContent}><View style={styles.offlinePill}><Feather name="download" size={12} color="#D9D5FF" /><Text style={styles.offlineText}>OFFLINE MODE</Text></View><Text style={styles.heroTitle}>Your music.{'\n'}Everywhere.</Text><Text style={styles.heroCopy}>The songs you own, ready when you are.</Text><Pressable onPress={() => void addTracks()} style={styles.heroButton}><Text style={styles.heroButtonText}>Add music</Text><Feather name="arrow-up-right" size={16} color="#0C0D12" /></Pressable></View>
-        </ImageBackground>
+        <MusicOrb colors={colors} onPress={() => router.push('/(tabs)/library')} />
         <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recently added</Text><Pressable onPress={() => router.push('/(tabs)/library')}><Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text></Pressable></View>
         {recent.length === 0 ? <View style={[styles.emptyRow, { borderColor: colors.border }]}><Feather name="music" size={18} color={colors.mutedForeground} /><Text style={[styles.emptyRowText, { color: colors.mutedForeground }]}>Import a few MP3s to see them here.</Text></View> : recent.map((track) => <Pressable key={track.id} onPress={() => { playTrack(track); router.push('/player'); }} style={({ pressed }) => [styles.trackRow, { opacity: pressed ? 0.7 : 1 }]}><MusicArtwork coverKey={track.coverKey} size={52} style={styles.trackArt} /><View style={styles.trackCopy}><Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{track.title}</Text><Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{track.artist}</Text></View><Feather name="play-circle" size={23} color={colors.primary} /></Pressable>)}
         <View style={[styles.tip, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.tipIcon, { backgroundColor: colors.accent }]}><Feather name="headphones" size={17} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[styles.tipTitle, { color: colors.foreground }]}>Made for your pocket</Text><Text style={[styles.tipCopy, { color: colors.mutedForeground }]}>Playback keeps going with your screen locked.</Text></View></View>
@@ -41,16 +102,14 @@ const styles = StyleSheet.create({
   title: { fontFamily: 'Inter_700Bold', fontSize: 28, marginTop: 8 },
   profile: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
   profileText: { fontFamily: 'Inter_700Bold', fontSize: 16 },
-  hero: { height: 285, marginHorizontal: 20, marginTop: 26, overflow: 'hidden', borderRadius: 26 },
-  heroImage: { borderRadius: 26 },
-  heroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(9,10,16,0.48)' },
-  heroContent: { flex: 1, padding: 24, justifyContent: 'flex-end' },
-  offlinePill: { position: 'absolute', top: 20, left: 22, flexDirection: 'row', gap: 7, alignItems: 'center' },
-  offlineText: { color: '#D9D5FF', fontFamily: 'Inter_700Bold', fontSize: 9, letterSpacing: 1.3 },
-  heroTitle: { color: '#FFFFFF', fontFamily: 'Inter_700Bold', fontSize: 31, lineHeight: 35 },
-  heroCopy: { color: '#D7D9E4', fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 10 },
-  heroButton: { alignSelf: 'flex-start', backgroundColor: '#F7F8FC', borderRadius: 13, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 16, paddingVertical: 11, marginTop: 18 },
-  heroButtonText: { color: '#0C0D12', fontFamily: 'Inter_700Bold', fontSize: 12 },
+  orbHero: { height: 328, marginHorizontal: 20, marginTop: 26, overflow: 'hidden', borderRadius: 28, borderWidth: 1 },
+  orbContent: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 6 },
+  waveField: { width: 196, height: 196, alignItems: 'center', justifyContent: 'center' },
+  waveRing: { position: 'absolute', width: 146, height: 146, borderRadius: 73, borderWidth: 2 },
+  orbGlow: { position: 'absolute', width: 132, height: 132, borderRadius: 66, opacity: 0.18 },
+  orbCore: { width: 116, height: 116, borderRadius: 40, alignItems: 'center', justifyContent: 'center', paddingLeft: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.26, shadowRadius: 18, elevation: 8 },
+  orbTitle: { fontFamily: 'Inter_700Bold', fontSize: 18, marginTop: 14 },
+  orbCopy: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 6 },
   sectionHeader: { marginHorizontal: 20, marginTop: 30, marginBottom: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { fontFamily: 'Inter_700Bold', fontSize: 18 },
   seeAll: { fontFamily: 'Inter_600SemiBold', fontSize: 12 },
