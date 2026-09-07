@@ -2,13 +2,15 @@ import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicArtwork } from '@/components/MusicArtwork';
 import { ScreenTransition } from '@/components/ScreenTransition';
 import { useMusic } from '@/context/MusicContext';
 import { useColors } from '@/hooks/useColors';
+
+const appIcon = require('@/assets/images/icon.png');
 
 function MusicOrb({ colors, onPress }: { colors: ReturnType<typeof useColors>; onPress: () => void }) {
   const { width } = useWindowDimensions();
@@ -62,8 +64,8 @@ function MusicOrb({ colors, onPress }: { colors: ReturnType<typeof useColors>; o
           <Animated.View style={[styles.waveRing, { borderColor: colors.primary }, waveTwoStyle]} />
           <Animated.View style={[styles.waveRing, { borderColor: colors.highlight }, waveThreeStyle]} />
           <View style={[styles.orbGlow, { backgroundColor: colors.primary }]} />
-          <Animated.View style={[styles.orbCore, { backgroundColor: colors.foreground }, noteStyle]}>
-            <Feather name="music" size={62} color={colors.background} />
+          <Animated.View style={[styles.orbCore, { backgroundColor: colors.foreground, borderColor: colors.foreground }, noteStyle]}>
+            <Image source={appIcon} style={styles.orbLogo} resizeMode="cover" />
           </Animated.View>
         </View>
         <Text style={[styles.orbTitle, { color: colors.foreground }]}>Open your library</Text>
@@ -120,7 +122,8 @@ const styles = StyleSheet.create({
   waveField: { width: 196, height: 196, alignItems: 'center', justifyContent: 'center' },
   waveRing: { position: 'absolute', width: 146, height: 146, borderRadius: 73, borderWidth: 2 },
   orbGlow: { position: 'absolute', width: 132, height: 132, borderRadius: 66, opacity: 0.18 },
-  orbCore: { width: 116, height: 116, borderRadius: 40, alignItems: 'center', justifyContent: 'center', paddingLeft: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.26, shadowRadius: 18, elevation: 8 },
+  orbCore: { width: 124, height: 124, borderRadius: 62, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.26, shadowRadius: 18, elevation: 8 },
+  orbLogo: { width: '100%', height: '100%' },
   orbTitle: { fontFamily: 'Inter_700Bold', fontSize: 18, marginTop: 14 },
   orbCopy: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 6 },
   sectionHeader: { marginHorizontal: 20, marginTop: 30, marginBottom: 13, alignItems: 'center' },
