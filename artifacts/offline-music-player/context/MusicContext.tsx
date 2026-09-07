@@ -133,7 +133,9 @@ export function MusicProvider({ children }: PropsWithChildren) {
         if (storedSettings) {
           const parsed = JSON.parse(storedSettings) as { volume?: number; playbackSpeed?: number };
           if (typeof parsed.volume === 'number') setVolumeState(Math.max(0, Math.min(1, parsed.volume)));
-          if ([0.5, 0.75, 1, 1.25, 1.5, 2].includes(parsed.playbackSpeed ?? 1)) setPlaybackSpeedState(parsed.playbackSpeed as PlaybackSpeed);
+          if (typeof parsed.playbackSpeed === 'number' && [0.5, 0.75, 1, 1.25, 1.5, 2].includes(parsed.playbackSpeed)) {
+            setPlaybackSpeedState(parsed.playbackSpeed as PlaybackSpeed);
+          }
         }
       } catch {
         setTracks([]);
@@ -152,7 +154,7 @@ export function MusicProvider({ children }: PropsWithChildren) {
   }, [player, playbackSpeed, volume]);
 
   useEffect(() => {
-    if (!status.isLoaded) return;
+    if (!status.isLoaded || typeof playbackSpeed !== 'number' || !Number.isFinite(playbackSpeed)) return;
     player.setPlaybackRate(playbackSpeed);
   }, [player, playbackSpeed, status.isLoaded]);
 
