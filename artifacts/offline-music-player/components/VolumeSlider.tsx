@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 
 type VolumeSliderProps = {
@@ -12,11 +12,20 @@ type VolumeSliderProps = {
 
 export function VolumeSlider({ value, onChange, trackColor, fillColor, thumbColor }: VolumeSliderProps) {
   const [width, setWidth] = useState(1);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draftValue, setDraftValue] = useState(value);
   const latestValue = useRef(value);
   const lastNativeVolumeAt = useRef(0);
+  const displayedValue = isDragging ? draftValue : value;
+
+  useEffect(() => {
+    if (!isDragging) setDraftValue(value);
+  }, [isDragging, value]);
+
   const updateFromX = (x: number, force = false) => {
     const nextValue = Math.max(0, Math.min(1, x / width));
     latestValue.current = nextValue;
+    setDraftValue(nextValue);
     const now = Date.now();
     if (force || now - lastNativeVolumeAt.current >= 32) {
       lastNativeVolumeAt.current = now;
@@ -28,23 +37,32 @@ export function VolumeSlider({ value, onChange, trackColor, fillColor, thumbColo
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
     onShouldBlockNativeResponder: () => true,
-    onPanResponderGrant: (event) => updateFromX(event.nativeEvent.locationX, true),
+    onPanResponderGrant: (event) => {
+      setIsDragging(true);
+      updateFromX(event.nativeEvent.locationX, true);
+    },
     onPanResponderMove: (event) => updateFromX(event.nativeEvent.locationX),
-    onPanResponderRelease: () => onChange(latestValue.current),
-    onPanResponderTerminate: () => onChange(latestValue.current),
+    onPanResponderRelease: () => {
+      setIsDragging(false);
+      onChange(latestValue.current);
+    },
+    onPanResponderTerminate: () => {
+      setIsDragging(false);
+      onChange(latestValue.current);
+    },
   }), [width, onChange]);
 
   return (
     <View style={styles.row}>
-      <Feather name={value === 0 ? 'volume-x' : 'volume-1'} size={17} color={fillColor} />
+      <Feather name={displayedValue === 0 ? 'volume-x' : 'volume-1'} size={17} color={fillColor} />
       <View
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
         style={styles.touchArea}
         {...responder.panHandlers}
       >
         <View style={[styles.track, { backgroundColor: trackColor }]}>
-          <View style={[styles.fill, { backgroundColor: fillColor, width: `${value * 100}%` }]} />
-          <View style={[styles.thumb, { backgroundColor: thumbColor, left: `${value * 100}%` }]} />
+          <View style={[styles.fill, { backgroundColor: fillColor, width: `${displayedValue * 100}%` }]} />
+          <View style={[styles.thumb, { backgroundColor: thumbColor, left: `${displayedValue * 100}%` }]} />
         </View>
       </View>
       <Feather name="volume-2" size={17} color={fillColor} />

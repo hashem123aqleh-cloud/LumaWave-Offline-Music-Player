@@ -29,7 +29,7 @@ export function SeekBar({ position, duration, onSeek, trackColor, fillColor, thu
     latestPosition.current = nextPosition;
     setDraftPosition(nextPosition);
     const now = Date.now();
-    if (force || now - lastNativeSeekAt.current >= 50) {
+    if (force || now - lastNativeSeekAt.current >= 75) {
       lastNativeSeekAt.current = now;
       void onSeek(nextPosition);
     }

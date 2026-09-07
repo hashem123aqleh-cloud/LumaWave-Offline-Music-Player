@@ -105,7 +105,6 @@ export default function HomeScreen() {
         <MusicOrb colors={colors} onPress={() => router.push('/(tabs)/library')} />
         <View style={styles.sectionHeader}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Recently added</Text><Pressable onPress={() => router.push('/(tabs)/library')}><Text style={[styles.seeAll, { color: colors.primary }]}>See all</Text></Pressable></View>
         {recent.length === 0 ? <View style={[styles.emptyRow, { borderColor: colors.border, backgroundColor: colors.card }]}><Feather name="music" size={18} color={colors.mutedForeground} /><Text style={[styles.emptyRowText, { color: colors.mutedForeground }]}>Import a few MP3s to see them here.</Text></View> : recent.map((track) => <Pressable key={track.id} onPress={() => { playTrack(track); router.push('/player'); }} style={({ pressed }) => [styles.trackRow, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}><MusicArtwork coverKey={track.coverKey} size={52} style={styles.trackArt} /><View style={styles.trackCopy}><Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{track.title}</Text><Text style={[styles.trackArtist, { color: colors.mutedForeground }]} numberOfLines={1}>{track.artist}</Text></View><Feather name="play-circle" size={23} color={colors.primary} /></Pressable>)}
-        <View style={[styles.tip, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={[styles.tipIcon, { backgroundColor: colors.accent }]}><Feather name="headphones" size={17} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[styles.tipTitle, { color: colors.foreground }]}>Made for your pocket</Text><Text style={[styles.tipCopy, { color: colors.mutedForeground }]}>Playback keeps going with your screen locked.</Text></View></View>
         </ScrollView>
       </View>
     </ScreenTransition>
@@ -136,8 +135,4 @@ const styles = StyleSheet.create({
   trackCopy: { flex: 1, marginHorizontal: 13 },
   trackTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 14 },
   trackArtist: { fontFamily: 'Inter_400Regular', fontSize: 12, marginTop: 5 },
-  tip: { marginHorizontal: 20, borderRadius: 999, borderWidth: 1, padding: 12, flexDirection: 'row', gap: 12, alignItems: 'center', marginTop: 28 },
-  tipIcon: { width: 39, height: 39, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  tipTitle: { fontFamily: 'Inter_600SemiBold', fontSize: 13 },
-  tipCopy: { fontFamily: 'Inter_400Regular', fontSize: 11, marginTop: 4 },
 });
