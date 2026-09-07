@@ -34,7 +34,7 @@ export default function PlayerScreen() {
         <Pressable style={styles.headerButton}><Feather name="more-horizontal" size={24} color={colors.foreground} /></Pressable>
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <MusicArtwork coverKey={currentTrack.coverKey} size={318} style={styles.largeArt} />
+        <MusicArtwork coverKey={currentTrack.coverKey} artworkUri={currentTrack.artworkUri} size={318} style={styles.largeArt} />
         <View style={styles.trackInfo}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.trackTitle, { color: colors.foreground }]} numberOfLines={1}>{currentTrack.title}</Text>

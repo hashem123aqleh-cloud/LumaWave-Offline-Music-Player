@@ -14,7 +14,7 @@ export function NowPlayingBar({ onPress }: { onPress?: () => void }) {
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border, bottom: Platform.OS === 'web' ? 84 : Math.max(84, insets.bottom + 54) }]}>
       <Pressable onPress={onPress} style={({ pressed }) => [styles.mainContent, { opacity: pressed ? 0.72 : 1 }]}>
-        <MusicArtwork coverKey={currentTrack.coverKey} size={46} style={styles.artwork} />
+        <MusicArtwork coverKey={currentTrack.coverKey} artworkUri={currentTrack.artworkUri} size={46} style={styles.artwork} />
         <View style={styles.copy}>
           <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>{currentTrack.title}</Text>
           <Text style={[styles.artist, { color: colors.mutedForeground }]} numberOfLines={1}>{currentTrack.artist}</Text>

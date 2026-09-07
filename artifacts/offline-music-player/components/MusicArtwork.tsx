@@ -7,10 +7,10 @@ const artwork: Record<CoverKey, ImageSourcePropType> = {
   dusk: require('@/assets/images/cover-dusk.jpg'),
 };
 
-export function MusicArtwork({ coverKey, size, style }: { coverKey: CoverKey; size: number; style?: StyleProp<ViewStyle> }) {
+export function MusicArtwork({ coverKey, artworkUri, size, style }: { coverKey: CoverKey; artworkUri?: string; size: number; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.shadow, { width: size, height: size }, style]}>
-      <Image source={artwork[coverKey]} style={styles.image} />
+      <Image source={artworkUri ? { uri: artworkUri } : artwork[coverKey]} style={styles.image} />
     </View>
   );
 }

@@ -1,0 +1,1 @@
+- [Expo Audio playback rate](expo-audio-playback-rate.md) — wait for the player to load before setting playback-rate properties on web.
