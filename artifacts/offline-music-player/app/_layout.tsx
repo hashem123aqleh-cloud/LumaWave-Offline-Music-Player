@@ -26,6 +26,7 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back', animation: 'none' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="player" options={{ headerShown: false, gestureEnabled: false, fullScreenGestureEnabled: false }} />
     </Stack>
   );
 }
