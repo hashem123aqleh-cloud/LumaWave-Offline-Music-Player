@@ -153,7 +153,7 @@ export function MusicProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (!status.isLoaded) return;
-    player.playbackRate = playbackSpeed;
+    player.setPlaybackRate(playbackSpeed);
   }, [player, playbackSpeed, status.isLoaded]);
 
   useEffect(() => {
