@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 
 type VolumeSliderProps = {
@@ -12,16 +12,26 @@ type VolumeSliderProps = {
 
 export function VolumeSlider({ value, onChange, trackColor, fillColor, thumbColor }: VolumeSliderProps) {
   const [width, setWidth] = useState(1);
-  const updateFromX = (x: number) => onChange(Math.max(0, Math.min(1, x / width)));
+  const latestValue = useRef(value);
+  const lastNativeVolumeAt = useRef(0);
+  const updateFromX = (x: number, force = false) => {
+    const nextValue = Math.max(0, Math.min(1, x / width));
+    latestValue.current = nextValue;
+    const now = Date.now();
+    if (force || now - lastNativeVolumeAt.current >= 32) {
+      lastNativeVolumeAt.current = now;
+      onChange(nextValue);
+    }
+  };
   const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderTerminationRequest: () => false,
     onShouldBlockNativeResponder: () => true,
-    onPanResponderGrant: (event) => updateFromX(event.nativeEvent.locationX),
+    onPanResponderGrant: (event) => updateFromX(event.nativeEvent.locationX, true),
     onPanResponderMove: (event) => updateFromX(event.nativeEvent.locationX),
-    onPanResponderRelease: () => undefined,
-    onPanResponderTerminate: () => undefined,
+    onPanResponderRelease: () => onChange(latestValue.current),
+    onPanResponderTerminate: () => onChange(latestValue.current),
   }), [width, onChange]);
 
   return (

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAudioPlayer, useAudioPlayer, useAudioPlayerStatus, setAudioModeAsync } from 'expo-audio';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import React, { createContext, PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Alert, Platform } from 'react-native';
 
 export type CoverKey = 'midnight' | 'neon' | 'dusk';
@@ -105,7 +105,7 @@ export function MusicProvider({ children }: PropsWithChildren) {
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const [queueTrackIds, setQueueTrackIds] = useState<string[]>([]);
   const [volume, setVolumeState] = useState(1);
-  const player = useAudioPlayer(currentTrack?.uri ?? null, { updateInterval: 250 });
+  const player = useAudioPlayer(currentTrack?.uri ?? null, { updateInterval: 500 });
   const status = useAudioPlayerStatus(player);
 
   useEffect(() => {
@@ -137,6 +137,10 @@ export function MusicProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     player.volume = volume;
+    const persistTimer = setTimeout(() => {
+      void AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({ volume }));
+    }, 250);
+    return () => clearTimeout(persistTimer);
   }, [player, volume]);
 
   useEffect(() => {
@@ -355,12 +359,13 @@ export function MusicProvider({ children }: PropsWithChildren) {
     await persistPlaylists(nextPlaylists);
   };
 
-  const setVolume = (value: number) => {
+  const setVolume = useCallback((value: number) => {
     const nextVolume = Math.max(0, Math.min(1, value));
     setVolumeState(nextVolume);
     player.volume = nextVolume;
-    void AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({ volume: nextVolume }));
-  };
+  }, [player]);
+
+  const seekTo = useCallback((seconds: number) => player.seekTo(seconds), [player]);
 
   const value = useMemo<MusicContextValue>(() => ({
     tracks,
@@ -385,8 +390,8 @@ export function MusicProvider({ children }: PropsWithChildren) {
     togglePlayback,
     skipForward: () => skip(1),
     skipBack: () => skip(-1),
-    seekTo: (seconds) => player.seekTo(seconds),
-  }), [currentTrack, isLoading, player, playlists, queueTrackIds, status.currentTime, status.duration, status.playing, tracks, volume]);
+    seekTo,
+  }), [currentTrack, isLoading, player, playlists, queueTrackIds, seekTo, setVolume, status.currentTime, status.duration, status.playing, tracks, volume]);
 
   return <MusicContext.Provider value={value}>{children}</MusicContext.Provider>;
 }

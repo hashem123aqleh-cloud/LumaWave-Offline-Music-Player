@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, View } from 'react-native';
 
 type SeekBarProps = {
@@ -14,6 +14,8 @@ export function SeekBar({ position, duration, onSeek, trackColor, fillColor, thu
   const [width, setWidth] = useState(1);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [draftPosition, setDraftPosition] = useState(position);
+  const latestPosition = useRef(position);
+  const lastNativeSeekAt = useRef(0);
   const displayedPosition = isScrubbing ? draftPosition : position;
   const progress = duration > 0 ? Math.max(0, Math.min(1, displayedPosition / duration)) : 0;
 
@@ -21,11 +23,16 @@ export function SeekBar({ position, duration, onSeek, trackColor, fillColor, thu
     if (!isScrubbing) setDraftPosition(position);
   }, [isScrubbing, position]);
 
-  const seekFromX = (x: number) => {
+  const seekFromX = (x: number, force = false) => {
     if (!duration) return;
     const nextPosition = Math.max(0, Math.min(duration, (x / width) * duration));
+    latestPosition.current = nextPosition;
     setDraftPosition(nextPosition);
-    void onSeek(nextPosition);
+    const now = Date.now();
+    if (force || now - lastNativeSeekAt.current >= 50) {
+      lastNativeSeekAt.current = now;
+      void onSeek(nextPosition);
+    }
   };
 
   const responder = useMemo(() => PanResponder.create({
@@ -35,11 +42,17 @@ export function SeekBar({ position, duration, onSeek, trackColor, fillColor, thu
     onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: (event) => {
       setIsScrubbing(true);
-      seekFromX(event.nativeEvent.locationX);
+      seekFromX(event.nativeEvent.locationX, true);
     },
     onPanResponderMove: (event) => seekFromX(event.nativeEvent.locationX),
-    onPanResponderRelease: () => setIsScrubbing(false),
-    onPanResponderTerminate: () => setIsScrubbing(false),
+    onPanResponderRelease: () => {
+      setIsScrubbing(false);
+      void onSeek(latestPosition.current);
+    },
+    onPanResponderTerminate: () => {
+      setIsScrubbing(false);
+      void onSeek(latestPosition.current);
+    },
   }), [duration, onSeek, width]);
 
   return (
