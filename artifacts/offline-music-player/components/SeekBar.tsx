@@ -31,6 +31,8 @@ export function SeekBar({ position, duration, onSeek, trackColor, fillColor, thu
   const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => duration > 0,
     onMoveShouldSetPanResponder: () => duration > 0,
+    onPanResponderTerminationRequest: () => false,
+    onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: (event) => {
       setIsScrubbing(true);
       seekFromX(event.nativeEvent.locationX);

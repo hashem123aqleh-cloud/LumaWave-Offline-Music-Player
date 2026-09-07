@@ -16,8 +16,12 @@ export function VolumeSlider({ value, onChange, trackColor, fillColor, thumbColo
   const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
+    onPanResponderTerminationRequest: () => false,
+    onShouldBlockNativeResponder: () => true,
     onPanResponderGrant: (event) => updateFromX(event.nativeEvent.locationX),
     onPanResponderMove: (event) => updateFromX(event.nativeEvent.locationX),
+    onPanResponderRelease: () => undefined,
+    onPanResponderTerminate: () => undefined,
   }), [width, onChange]);
 
   return (
