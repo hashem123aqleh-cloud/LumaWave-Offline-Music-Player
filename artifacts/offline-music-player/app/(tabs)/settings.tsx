@@ -9,7 +9,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { tracks, addTracks } = useMusic();
-  const showAbout = () => Alert.alert('Offline Music Player', 'A private space for the music you already own. Your library stays on this iPhone.');
+  const showAbout = () => Alert.alert('LumaWave', 'A private space for the music you already own. Your library stays on this iPhone.');
   const topInset = Math.max(insets.top, Platform.OS === 'web' ? 67 : 24);
 
   return (

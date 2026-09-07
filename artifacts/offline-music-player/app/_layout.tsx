@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -14,6 +14,8 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { MusicProvider } from '@/context/MusicContext';
+import { LaunchAnimation } from '@/components/LaunchAnimation';
+import { View } from 'react-native';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -22,13 +24,14 @@ const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Back', animation: 'fade' }}>
+    <Stack screenOptions={{ headerBackTitle: 'Back', animation: 'none' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
     </Stack>
   );
 }
 
 export default function RootLayout() {
+  const [showLaunchAnimation, setShowLaunchAnimation] = useState(true);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -49,9 +52,12 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <MusicProvider>
-            <GestureHandlerRootView>
+            <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardProvider>
-                <RootLayoutNav />
+                <View style={{ flex: 1 }}>
+                  <RootLayoutNav />
+                  {showLaunchAnimation ? <LaunchAnimation onFinish={() => setShowLaunchAnimation(false)} /> : null}
+                </View>
               </KeyboardProvider>
             </GestureHandlerRootView>
           </MusicProvider>

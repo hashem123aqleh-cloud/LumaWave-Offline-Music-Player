@@ -1,6 +1,6 @@
-# Offline Music Player
+# LumaWave
 
-A private iPhone music player for importing MP3s the user owns and listening offline with background playback.
+A private offline music player for importing MP3s the user owns and listening with background playback on iPhone and iPad.
 
 ## Run & Operate
 
@@ -22,7 +22,7 @@ A private iPhone music player for importing MP3s the user owns and listening off
 
 ## Where things live
 
-- `artifacts/offline-music-player` — Expo mobile app and local music library.
+- `artifacts/offline-music-player` — LumaWave Expo mobile app and local music library.
 - `artifacts/offline-music-player/context/MusicContext.tsx` — AsyncStorage-backed library and Expo Audio playback state.
 - `artifacts/offline-music-player/app/(tabs)` — Home, Library, and Settings screens.
 - `artifacts/offline-music-player/app/player.tsx` — full-screen player.

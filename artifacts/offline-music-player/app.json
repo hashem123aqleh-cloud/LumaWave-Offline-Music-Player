@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Offline Music Player",
-    "slug": "offline-music-player",
+    "name": "LumaWave",
+    "slug": "lumawave",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
-    "scheme": "offline-music-player",
+    "scheme": "lumawave",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": true
     },
     "android": {},
     "web": {

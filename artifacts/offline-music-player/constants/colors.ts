@@ -16,7 +16,7 @@ const colors = {
   light: {
     // Legacy aliases (kept for backward compatibility)
     text: '#F7F8FC',
-    tint: '#8B7CFF',
+    tint: '#A78BFA',
 
     // Core surfaces
     background: '#0C0D12',
@@ -27,49 +27,51 @@ const colors = {
     cardForeground: '#F7F8FC',
 
     // Primary action color (buttons, links, active states)
-    primary: '#8B7CFF',
+    primary: '#A78BFA',
     primaryForeground: '#FFFFFF',
 
     // Secondary / less-emphasis interactive surfaces
-    secondary: '#222431',
+    secondary: '#1D2436',
     secondaryForeground: '#F7F8FC',
 
     // Muted / subdued elements (dividers, timestamps, placeholders)
-    muted: '#242632',
+    muted: '#22283B',
     mutedForeground: '#9295A5',
 
     // Accent highlights (badges, selected items, focus rings)
-    accent: '#312D58',
-    accentForeground: '#D9D5FF',
+    accent: '#30275F',
+    accentForeground: '#E0DAFF',
+    highlight: '#4DE6C2',
 
     // Destructive actions (delete, error states)
     destructive: '#FF6B81',
     destructiveForeground: '#FFFFFF',
 
     // Borders and input outlines
-    border: '#272A37',
-    input: '#2D3040',
+    border: '#2A2E46',
+    input: '#303650',
   },
 
   dark: {
     text: '#F7F8FC',
-    tint: '#8B7CFF',
+    tint: '#A78BFA',
     background: '#0C0D12',
     foreground: '#F7F8FC',
     card: '#171922',
     cardForeground: '#F7F8FC',
-    primary: '#8B7CFF',
+    primary: '#A78BFA',
     primaryForeground: '#FFFFFF',
-    secondary: '#222431',
+    secondary: '#1D2436',
     secondaryForeground: '#F7F8FC',
-    muted: '#242632',
+    muted: '#22283B',
     mutedForeground: '#9295A5',
-    accent: '#312D58',
-    accentForeground: '#D9D5FF',
+    accent: '#30275F',
+    accentForeground: '#E0DAFF',
+    highlight: '#4DE6C2',
     destructive: '#FF6B81',
     destructiveForeground: '#FFFFFF',
-    border: '#272A37',
-    input: '#2D3040',
+    border: '#2A2E46',
+    input: '#303650',
   },
 
   // Border radius (in px). Sync from the sibling web artifact's --radius
